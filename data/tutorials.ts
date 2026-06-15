@@ -20,7 +20,7 @@ export const tutorials: Tutorial[] = [
     title: "Animated Onboarding Screen",
     description:
       "Build a beautiful animated onboarding screen with SwiftUI, featuring glassmorphism cards, gradient backgrounds and swipe gestures.",
-    youtubeId: "dQw4w9WgXcQ",
+    youtubeId: "HLY1HGLFI64",
     thumbnail: "/thumbnails/onboarding.png",
     downloadUrl: "https://github.com/pixoft/releases/releases/download/v1.0/onboarding.zip",
     tags: ["SwiftUI", "Animation", "Onboarding"],

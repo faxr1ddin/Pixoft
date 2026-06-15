@@ -5,7 +5,7 @@ export default function Footer() {
         <p>© {new Date().getFullYear()} Pixoft. All rights reserved.</p>
 
         <div className="flex items-center gap-6">
-          <a href="https://youtube.com" target="_blank" rel="noreferrer" className="transition-colors hover:text-white">
+          <a href="https://www.youtube.com/@pixoft_channel" target="_blank" rel="noreferrer" className="transition-colors hover:text-white">
             YouTube
           </a>
           <a href="https://github.com/pixoft" target="_blank" rel="noreferrer" className="transition-colors hover:text-white">

@@ -14,7 +14,7 @@ export default function AboutPage() {
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <a
-          href="https://youtube.com"
+          href="https://www.youtube.com/@pixoft_channel"
           target="_blank"
           rel="noreferrer"
           className="rounded-full bg-blue-500 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-400"
@@ -22,10 +22,10 @@ export default function AboutPage() {
           Subscribe on YouTube
         </a>
         <a
-          href="mailto:hello@pixoft.dev"
+          href="mailto:hello@textilepro.app"
           className="rounded-full border border-white/15 px-6 py-3 text-center text-sm font-semibold text-white transition-colors hover:border-blue-500 hover:text-blue-400"
         >
-          hello@pixoft.dev
+          hello@textilepro.app
         </a>
       </div>
     </main>

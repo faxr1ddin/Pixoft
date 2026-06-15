@@ -16,7 +16,7 @@ export default function Header() {
             About
           </Link>
           <a
-            href="https://youtube.com"
+            href="https://www.youtube.com/@pixoft_channel"
             target="_blank"
             rel="noreferrer"
             className="rounded-full border border-white/15 px-4 py-1.5 text-white transition-colors hover:border-blue-500 hover:text-blue-400"
