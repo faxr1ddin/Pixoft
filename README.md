@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pixoft Website
 
-## Getting Started
+Source code platform for the Pixoft SwiftUI tutorial channel. Built with Next.js, TypeScript and Tailwind CSS.
 
-First, run the development server:
+## Pages
+
+- `/` — Home, hero + featured tutorials
+- `/tutorials` — All tutorials with search and filters
+- `/tutorials/[slug]` — Tutorial detail (video embed, description, what you'll learn, requirements, download, file structure)
+- `/about` — About the channel
+
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Adding a new tutorial
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edit [`data/tutorials.ts`](data/tutorials.ts) and add a new entry to the `tutorials` array following the `Tutorial` type. Add a thumbnail image to `public/thumbnails/`.
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
+### 1. Push to GitHub
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+gh auth login            # if not already logged in
+gh repo create pixoft-web --source=. --public --push
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Or manually:
 
-## Deploy on Vercel
+```bash
+git remote add origin https://github.com/<your-username>/pixoft-web.git
+git push -u origin main
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Deploy to Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Go to [vercel.com/new](https://vercel.com/new), import the GitHub repo, and deploy.
+- Or via CLI:
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+### 3. Custom domain
+
+In the Vercel project settings, add `pixoft.dev` as a domain and follow the DNS instructions.
+
+### 4. Source code ZIPs
+
+Upload tutorial source code ZIPs to GitHub Releases (e.g. a `pixoft/releases` repo) and reference the download URLs in `downloadUrl` fields in `data/tutorials.ts`.
+
+### 5. YouTube description
+
+For each new video, add:
+
+```
+📦 Source Code → https://pixoft.dev/tutorials/<slug>
+
+🔗 Links
+Website: https://pixoft.dev
+GitHub: https://github.com/pixoft
+```
