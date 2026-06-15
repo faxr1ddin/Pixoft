@@ -2,10 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Tutorial } from "@/data/tutorials";
 
-const PLACEHOLDER_THUMBNAILS = new Set(["/thumbnails/onboarding.png"]);
-
 export default function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
-  const hasRealThumbnail = !PLACEHOLDER_THUMBNAILS.has(tutorial.thumbnail);
+  const hasRealThumbnail = tutorial.thumbnail.startsWith("http");
 
   return (
     <Link
