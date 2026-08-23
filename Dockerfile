@@ -13,12 +13,15 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+RUN apk add --no-cache openssl
+
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY package.json ./
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
+COPY --chown=nestjs:nodejs package.json ./
 
 USER nestjs
 EXPOSE 3000
