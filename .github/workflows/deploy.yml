@@ -37,6 +37,7 @@ jobs:
         with:
           context: .
           push: true
+          no-cache: true
           tags: ghcr.io/faxr1ddin/pixoft-api:latest
 
       - name: Deploy to droplet
