@@ -6,17 +6,22 @@ const LIST_SELECT = {
   id: true,
   title: true,
   company: true,
+  companyLogo: true,
+  category: true,
   workType: true,
   location: true,
   gender: true,
   salaryMin: true,
   salaryMax: true,
+  createdAt: true,
 };
 
 const DETAIL_SELECT = {
   id: true,
   title: true,
   company: true,
+  companyLogo: true,
+  category: true,
   workType: true,
   location: true,
   gender: true,
@@ -24,11 +29,13 @@ const DETAIL_SELECT = {
   salaryMax: true,
   ageRange: true,
   workSchedule: true,
+  address: true,
   requirements: true,
   benefits: true,
   contactPhone: true,
   contactTelegram: true,
   applyLink: true,
+  createdAt: true,
 };
 
 @Injectable()
