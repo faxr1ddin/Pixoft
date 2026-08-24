@@ -12,8 +12,7 @@ services:
       - "127.0.0.1:5432:5432"
 
   web:
-    build: .
-    image: pixoft-api:latest
+    image: ghcr.io/faxr1ddin/pixoft-api:latest
     container_name: pixoft-api
     restart: unless-stopped
     environment:
