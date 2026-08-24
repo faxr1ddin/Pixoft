@@ -1,6 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryVacanciesDto } from './dto/query-vacancies.dto';
+
+const LIST_SELECT = {
+  id: true,
+  title: true,
+  company: true,
+  workType: true,
+  location: true,
+  gender: true,
+  salaryMin: true,
+  salaryMax: true,
+};
+
+const DETAIL_SELECT = {
+  id: true,
+  title: true,
+  company: true,
+  workType: true,
+  location: true,
+  gender: true,
+  salaryMin: true,
+  salaryMax: true,
+  ageRange: true,
+  workSchedule: true,
+  requirements: true,
+  benefits: true,
+  contactPhone: true,
+  contactTelegram: true,
+  applyLink: true,
+};
 
 @Injectable()
 export class VacanciesService {
@@ -26,6 +55,7 @@ export class VacanciesService {
 
     const vacancies = await this.prisma.vacancy.findMany({
       where,
+      select: LIST_SELECT,
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),
@@ -39,5 +69,16 @@ export class VacanciesService {
       cursor: hasMore ? data[data.length - 1].id : null,
       hasMore,
     };
+  }
+
+  async findOne(id: string) {
+    const vacancy = await this.prisma.vacancy.findFirst({
+      where: { id, isActive: true },
+      select: DETAIL_SELECT,
+    });
+
+    if (!vacancy) throw new NotFoundException();
+
+    return vacancy;
   }
 }

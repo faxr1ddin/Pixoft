@@ -1,5 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { QueryVacanciesDto } from './dto/query-vacancies.dto';
 import { VacanciesService } from './vacancies.service';
 
@@ -12,5 +12,12 @@ export class VacanciesController {
   @ApiOperation({ summary: 'Get all active vacancies with pagination and filters' })
   findAll(@Query() query: QueryVacanciesDto) {
     return this.vacanciesService.findAll(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get vacancy detail by ID' })
+  @ApiParam({ name: 'id', description: 'Vacancy ID' })
+  findOne(@Param('id') id: string) {
+    return this.vacanciesService.findOne(id);
   }
 }
