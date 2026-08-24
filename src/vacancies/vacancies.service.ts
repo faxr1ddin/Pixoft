@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { QueryVacanciesDto } from './dto/query-vacancies.dto';
+import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 
 const LIST_SELECT = {
   id: true,
@@ -83,9 +85,29 @@ export class VacanciesService {
       where: { id, isActive: true },
       select: DETAIL_SELECT,
     });
-
     if (!vacancy) throw new NotFoundException();
-
     return vacancy;
+  }
+
+  async create(dto: CreateVacancyDto) {
+    return this.prisma.vacancy.create({ data: dto, select: DETAIL_SELECT });
+  }
+
+  async update(id: string, dto: UpdateVacancyDto) {
+    await this.findOne(id);
+    return this.prisma.vacancy.update({
+      where: { id },
+      data: dto,
+      select: DETAIL_SELECT,
+    });
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    await this.prisma.vacancy.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return { success: true };
   }
 }
