@@ -1,7 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { CreateVacancyDto } from './dto/create-vacancy.dto';
-import { QueryVacanciesDto } from './dto/query-vacancies.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 import { VacanciesService } from './vacancies.service';
 
@@ -12,8 +10,8 @@ export class VacanciesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all active vacancies' })
-  findAll(@Query() query: QueryVacanciesDto) {
-    return this.vacanciesService.findAll(query);
+  findAll() {
+    return this.vacanciesService.findAll();
   }
 
   @Get(':id')
@@ -21,12 +19,6 @@ export class VacanciesController {
   @ApiParam({ name: 'id', description: 'Vacancy ID' })
   findOne(@Param('id') id: string) {
     return this.vacanciesService.findOne(id);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new vacancy' })
-  create(@Body() dto: CreateVacancyDto) {
-    return this.vacanciesService.create(dto);
   }
 
   @Patch(':id')
