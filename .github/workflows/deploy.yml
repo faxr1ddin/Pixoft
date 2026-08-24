@@ -12,6 +12,7 @@ on:
       - 'tsconfig.build.json'
       - 'nest-cli.json'
       - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
 
 jobs:
   build-and-deploy:
