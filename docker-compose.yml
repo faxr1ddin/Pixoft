@@ -18,6 +18,8 @@ services:
     environment:
       DATABASE_URL: postgresql://pixoft:${DB_PASSWORD}@db:5432/pixoft
       PORT: 3000
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

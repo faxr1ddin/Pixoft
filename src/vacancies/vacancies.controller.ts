@@ -1,5 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBasicAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { BasicAuthGuard } from '../common/guards/basic-auth.guard';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 import { VacanciesService } from './vacancies.service';
 
@@ -22,14 +31,18 @@ export class VacanciesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a vacancy' })
+  @UseGuards(BasicAuthGuard)
+  @ApiBasicAuth()
+  @ApiOperation({ summary: 'Update a vacancy (admin only)' })
   @ApiParam({ name: 'id', description: 'Vacancy ID' })
   update(@Param('id') id: string, @Body() dto: UpdateVacancyDto) {
     return this.vacanciesService.update(id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Deactivate a vacancy (soft delete)' })
+  @UseGuards(BasicAuthGuard)
+  @ApiBasicAuth()
+  @ApiOperation({ summary: 'Deactivate a vacancy — soft delete (admin only)' })
   @ApiParam({ name: 'id', description: 'Vacancy ID' })
   remove(@Param('id') id: string) {
     return this.vacanciesService.remove(id);
