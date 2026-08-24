@@ -56,6 +56,10 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             docker compose pull
+            docker compose down
             docker compose up -d
+            sleep 15
+            docker compose logs web --tail=40
+            docker compose ps
             docker logout ghcr.io
             docker image prune -f
