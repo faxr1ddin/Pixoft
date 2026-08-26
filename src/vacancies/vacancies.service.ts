@@ -4,11 +4,19 @@ import {
   VACANCY_DETAIL_SELECT,
   VACANCY_LIST_SELECT,
 } from './constants/vacancy-select';
+import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 
 @Injectable()
 export class VacanciesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  create(dto: CreateVacancyDto) {
+    return this.prisma.vacancy.create({
+      data: dto,
+      select: VACANCY_DETAIL_SELECT,
+    });
+  }
 
   findAll() {
     return this.prisma.vacancy.findMany({

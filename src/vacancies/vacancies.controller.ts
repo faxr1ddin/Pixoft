@@ -5,10 +5,12 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBasicAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { BasicAuthGuard } from '../common/guards/basic-auth.guard';
+import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 import { VacanciesService } from './vacancies.service';
 
@@ -28,6 +30,14 @@ export class VacanciesController {
   @ApiParam({ name: 'id', description: 'Vacancy ID' })
   findOne(@Param('id') id: string) {
     return this.vacanciesService.findOne(id);
+  }
+
+  @Post()
+  @UseGuards(BasicAuthGuard)
+  @ApiBasicAuth()
+  @ApiOperation({ summary: 'Create a new vacancy (admin only)' })
+  create(@Body() dto: CreateVacancyDto) {
+    return this.vacanciesService.create(dto);
   }
 
   @Patch(':id')
