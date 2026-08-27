@@ -10,6 +10,7 @@ datasource db {
 
 model Vacancy {
   id              String   @id @default(cuid())
+  code            Int      @unique @default(autoincrement())
   title           String
   positions       String[]
   company         String?

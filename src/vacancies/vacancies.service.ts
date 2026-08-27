@@ -59,4 +59,23 @@ export class VacanciesService {
 
     return { success: true };
   }
+
+  /** Soft-delete by the human-friendly sequential code (used by the bot). */
+  async removeByCode(code: number) {
+    const vacancy = await this.prisma.vacancy.findFirst({
+      where: { code, isActive: true },
+      select: { id: true },
+    });
+
+    if (!vacancy) {
+      throw new NotFoundException();
+    }
+
+    await this.prisma.vacancy.update({
+      where: { id: vacancy.id },
+      data: { isActive: false },
+    });
+
+    return { success: true };
+  }
 }

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 /** Fields returned by the list endpoint (GET /vacancies). */
 export const VACANCY_LIST_SELECT = {
   id: true,
+  code: true,
   title: true,
   positions: true,
   company: true,

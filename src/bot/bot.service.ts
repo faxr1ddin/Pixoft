@@ -12,13 +12,13 @@ import { AdInput } from '../ai/ai-parser.types';
 import { VacanciesService } from '../vacancies/vacancies.service';
 import { parsedAdToDto } from './vacancy-mapper';
 
-const escapeHtml = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BotService.name);
   private bot?: Telegraf;
+
+  /** Admin ids that sent /delete and whose next message is the id to delete. */
+  private readonly awaitingDelete = new Set<number>();
 
   private readonly adminIds = new Set(
     (process.env.ADMIN_IDS ?? '')
@@ -59,16 +59,27 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     bot.start((ctx) =>
       ctx.reply(
         this.isAdmin(ctx.from?.id)
-          ? "Assalomu alaykum! Vakansiya e'lonini matn yoki rasm ko'rinishida yuboring — men uni avtomatik chop etaman.\n\nO'chirish uchun: /delete <id>"
+          ? "Assalomu alaykum! Vakansiya e'lonini matn yoki rasm ko'rinishida yuboring — men uni avtomatik chop etaman.\n\nO'chirish uchun: /delete"
           : 'Kechirasiz, bu bot faqat administratorlar uchun.',
       ),
     );
 
-    bot.command('delete', (ctx) => this.handleDelete(ctx));
+    bot.command('delete', async (ctx) => {
+      if (!(await this.guardAdmin(ctx))) return;
+      this.awaitingDelete.add(ctx.from.id);
+      await ctx.reply("O'chirmoqchi bo'lgan vakansiya ID raqamini yuboring:");
+    });
 
     bot.on('text', async (ctx) => {
       if (ctx.message.text.startsWith('/')) return;
       if (!(await this.guardAdmin(ctx))) return;
+
+      if (this.awaitingDelete.has(ctx.from.id)) {
+        this.awaitingDelete.delete(ctx.from.id);
+        await this.deleteByCode(ctx, ctx.message.text.trim());
+        return;
+      }
+
       await this.createAndReply(ctx, { text: ctx.message.text });
     });
 
@@ -76,7 +87,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       if (!(await this.guardAdmin(ctx))) return;
       const image = await this.downloadPhoto(ctx);
       if (!image) {
-        await ctx.reply('Rasmni o\'qib bo\'lmadi. Iltimos, qaytadan yuboring.');
+        await ctx.reply("Rasmni o'qib bo'lmadi. Iltimos, qaytadan yuboring.");
         return;
       }
       await this.createAndReply(ctx, { image, text: ctx.message.caption });
@@ -114,7 +125,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
       await ctx.telegram.deleteMessage(ctx.chat.id, notice.message_id);
       await ctx.replyWithHTML(
-        `✅ Vakansiya chop etildi.\n<code>${vacancy.id}</code>`,
+        `✅ Vakansiya chop etildi.\nID: <b>${vacancy.code}</b>`,
       );
     } catch (error) {
       this.logger.error(`Parse/create failed: ${error}`);
@@ -122,31 +133,23 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async handleDelete(ctx: any) {
-    if (!(await this.guardAdmin(ctx))) return;
-
-    const ids = ctx.message.text.trim().split(/\s+/).slice(1);
-    if (ids.length === 0) {
-      await ctx.reply('Foydalanish: /delete <id> [<id> ...]');
+  private async deleteByCode(ctx: any, input: string) {
+    const code = Number(input);
+    if (!Number.isInteger(code) || code <= 0) {
+      await ctx.reply("Noto'g'ri ID. Faqat raqam kiriting, masalan: 3");
       return;
     }
 
-    const results: string[] = [];
-    for (const id of ids) {
-      try {
-        await this.vacanciesService.remove(id);
-        results.push(`🗑 <code>${escapeHtml(id)}</code> — o'chirildi`);
-      } catch (error) {
-        const notFound = error instanceof NotFoundException;
-        if (!notFound) this.logger.error(`Delete failed: ${error}`);
-        results.push(
-          `⚠️ <code>${escapeHtml(id)}</code> — ${
-            notFound ? 'topilmadi' : 'xatolik'
-          }`,
-        );
+    try {
+      await this.vacanciesService.removeByCode(code);
+      await ctx.replyWithHTML(`🗑 <b>${code}</b>-vakansiya o'chirildi.`);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        await ctx.reply(`${code}-ID bo'yicha vakansiya topilmadi.`);
+      } else {
+        this.logger.error(`Delete failed: ${error}`);
+        await ctx.reply('Xatolik yuz berdi.');
       }
     }
-
-    await ctx.replyWithHTML(results.join('\n'));
   }
 }
