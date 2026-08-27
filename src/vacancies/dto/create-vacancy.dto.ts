@@ -1,34 +1,51 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateVacancyDto {
   @ApiProperty({ example: 'Frontend Developer' })
   @IsString()
   title: string;
 
-  @ApiProperty({ example: 'TechUz' })
+  @ApiProperty({ type: [String], example: ['Frontend Developer', 'UI Designer'] })
+  @IsArray()
+  @IsString({ each: true })
+  positions: string[];
+
+  @ApiPropertyOptional({ example: 'TechUz' })
+  @IsOptional()
   @IsString()
-  company: string;
+  company?: string;
 
   @ApiPropertyOptional({ example: 'https://cdn.example.com/logo.png' })
   @IsOptional()
   @IsString()
   companyLogo?: string;
 
-  @ApiProperty({ enum: ["To'liq stavka", 'Yarim stavka', 'Masofaviy', 'Vaqtinchalik'] })
+  @ApiPropertyOptional({
+    enum: ["To'liq stavka", 'Yarim stavka', 'Masofaviy', 'Vaqtinchalik'],
+  })
+  @IsOptional()
   @IsIn(["To'liq stavka", 'Yarim stavka', 'Masofaviy', 'Vaqtinchalik'])
-  workType: string;
+  workType?: string;
 
-  @ApiProperty({ example: 'Toshkent' })
-  @IsString()
-  location: string;
+  @ApiProperty({ type: [String], example: ['Toshkent', 'Andijon'] })
+  @IsArray()
+  @IsString({ each: true })
+  locations: string[];
 
   @ApiPropertyOptional({ enum: ['Erkak', 'Ayol'] })
   @IsOptional()
   @IsIn(['Erkak', 'Ayol'])
   gender?: string;
 
-  @ApiPropertyOptional({ example: 3000000, description: 'null = negotiable' })
+  @ApiPropertyOptional({ example: 3000000 })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -39,6 +56,11 @@ export class CreateVacancyDto {
   @IsInt()
   @Min(0)
   salaryMax?: number;
+
+  @ApiPropertyOptional({ enum: ['UZS', 'USD'] })
+  @IsOptional()
+  @IsIn(['UZS', 'USD'])
+  currency?: string;
 
   @ApiProperty({ enum: ['IT', 'Savdo', 'Xizmat', 'Boshqa'] })
   @IsIn(['IT', 'Savdo', 'Xizmat', 'Boshqa'])
@@ -69,10 +91,10 @@ export class CreateVacancyDto {
   @IsString({ each: true })
   requirements: string[];
 
-  @ApiPropertyOptional({ example: '+998901234567' })
-  @IsOptional()
-  @IsString()
-  contactPhone?: string;
+  @ApiProperty({ type: [String], example: ['+998901234567'] })
+  @IsArray()
+  @IsString({ each: true })
+  phones: string[];
 
   @ApiPropertyOptional({ example: '@recruiter' })
   @IsOptional()

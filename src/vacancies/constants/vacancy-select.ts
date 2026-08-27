@@ -4,14 +4,16 @@ import { Prisma } from '@prisma/client';
 export const VACANCY_LIST_SELECT = {
   id: true,
   title: true,
+  positions: true,
   company: true,
   companyLogo: true,
   category: true,
   workType: true,
-  location: true,
+  locations: true,
   gender: true,
   salaryMin: true,
   salaryMax: true,
+  currency: true,
   createdAt: true,
 } satisfies Prisma.VacancySelect;
 
@@ -23,7 +25,7 @@ export const VACANCY_DETAIL_SELECT = {
   address: true,
   requirements: true,
   benefits: true,
-  contactPhone: true,
+  phones: true,
   contactTelegram: true,
   applyLink: true,
 } satisfies Prisma.VacancySelect;

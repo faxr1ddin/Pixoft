@@ -1,4 +1,4 @@
-import { ParsedAd } from './ai-parser.types';
+import { AdInput, ParsedAd } from './ai-parser.types';
 
 /**
  * Port for the AI extraction engine. The application depends on this
@@ -6,7 +6,7 @@ import { ParsedAd } from './ai-parser.types';
  * so implementations can be swapped without touching business logic.
  */
 export interface AiParser {
-  parse(sourceText: string): Promise<ParsedAd>;
+  parse(input: AdInput): Promise<ParsedAd>;
 }
 
 /** DI token for the active AiParser implementation. */

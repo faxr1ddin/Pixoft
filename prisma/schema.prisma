@@ -11,20 +11,22 @@ datasource db {
 model Vacancy {
   id              String   @id @default(cuid())
   title           String
-  company         String
+  positions       String[]
+  company         String?
   companyLogo     String?
-  workType        String
-  location        String
+  workType        String?
+  locations       String[]
   gender          String?
   salaryMin       Int?
   salaryMax       Int?
+  currency        String?
   category        String
   ageRange        String?
   workSchedule    String?
   address         String?
   benefits        String[]
   requirements    String[]
-  contactPhone    String?
+  phones          String[]
   contactTelegram String?
   applyLink       String?
   sourceText      String?
@@ -32,8 +34,4 @@ model Vacancy {
   createdAt       DateTime @default(now())
 
   @@index([isActive, createdAt(sort: Desc)])
-  @@index([isActive, category, createdAt(sort: Desc)])
-  @@index([isActive, workType, createdAt(sort: Desc)])
-  @@index([isActive, location, createdAt(sort: Desc)])
-  @@index([isActive, gender, createdAt(sort: Desc)])
 }

@@ -9,19 +9,22 @@ export const GENDERS = ['Erkak', 'Ayol'] as const;
 
 export const CATEGORIES = ['IT', 'Savdo', 'Xizmat', 'Boshqa'] as const;
 
+export const CURRENCIES = ['UZS', 'USD'] as const;
+
 export type WorkType = (typeof WORK_TYPES)[number];
 export type Gender = (typeof GENDERS)[number];
 export type Category = (typeof CATEGORIES)[number];
+export type Currency = (typeof CURRENCIES)[number];
 
-/** Max positions/vacancies we create from a single advertisement. */
-export const MAX_POSITIONS = 20;
+/** Guard against a malformed response producing an absurd array. */
+export const MAX_LIST_ITEMS = 30;
 
 /**
- * The structured result of parsing one raw advertisement. A single post can
- * advertise several positions that share the same company, salary, locations
- * and contacts — so `positions` is a list and each becomes its own vacancy.
- * Every field the ad does not clearly state is null (or [] for lists) — the
- * parser never guesses. `category` is the one allowed classification.
+ * The structured result of parsing one raw advertisement into a single
+ * vacancy. A post may name several roles, cities and phones, so those are
+ * lists on the one vacancy — the ad is never split. Every field the ad does
+ * not clearly state is null (or [] for lists); the parser never guesses.
+ * `category` is the one allowed classification.
  */
 export interface ParsedAd {
   positions: string[];
@@ -31,6 +34,7 @@ export interface ParsedAd {
   gender: Gender | null;
   salaryMin: number | null;
   salaryMax: number | null;
+  currency: Currency | null;
   category: Category;
   ageRange: string | null;
   workSchedule: string | null;
@@ -40,4 +44,10 @@ export interface ParsedAd {
   phones: string[];
   contactTelegram: string | null;
   applyLink: string | null;
+}
+
+/** Input to the parser: free text, an image, or an image with a caption. */
+export interface AdInput {
+  text?: string;
+  image?: { base64: string; mimeType: string };
 }

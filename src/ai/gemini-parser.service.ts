@@ -4,18 +4,21 @@ import {
   Logger,
 } from '@nestjs/common';
 import { AiParser } from './ai-parser.interface';
-import { ParsedAd } from './ai-parser.types';
+import { AdInput, ParsedAd } from './ai-parser.types';
 import {
-  buildExtractionUserMessage,
+  buildTextMessage,
   EXTRACTION_SYSTEM_PROMPT,
+  EXTRACTION_USER_TEXT,
 } from './extraction.prompt';
 import { normalizeParsed } from './normalization';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
+
 /**
  * Free-tier AI parser backed by Google Gemini (Google AI Studio).
- * Uses plain fetch — no SDK, no cost. Get a free key at aistudio.google.com.
+ * Multimodal: accepts plain text or an image of the ad. No SDK, no cost.
  */
 @Injectable()
 export class GeminiParserService implements AiParser {
@@ -23,24 +26,40 @@ export class GeminiParserService implements AiParser {
   private readonly model = process.env.AI_MODEL ?? 'gemini-3.6-flash';
   private readonly apiKey = process.env.GEMINI_API_KEY ?? '';
 
-  async parse(sourceText: string): Promise<ParsedAd> {
-    const text = sourceText?.trim();
-    if (!text) {
-      throw new InternalServerErrorException('Empty advertisement text');
-    }
+  async parse(input: AdInput): Promise<ParsedAd> {
     if (!this.apiKey) {
       throw new InternalServerErrorException('GEMINI_API_KEY is not set');
     }
 
-    const raw = await this.request(text);
+    const parts = this.buildParts(input);
+    if (parts.length === 0) {
+      throw new InternalServerErrorException('Empty advertisement input');
+    }
+
+    const raw = await this.request(parts);
     return normalizeParsed(this.extractJson(raw));
   }
 
-  private async request(text: string): Promise<string> {
+  private buildParts(input: AdInput): Part[] {
+    const parts: Part[] = [];
+    if (input.image) {
+      parts.push({ text: EXTRACTION_USER_TEXT });
+      parts.push({
+        inlineData: { mimeType: input.image.mimeType, data: input.image.base64 },
+      });
+      const caption = input.text?.trim();
+      if (caption) parts.push({ text: `Caption: ${caption}` });
+    } else if (input.text?.trim()) {
+      parts.push({ text: buildTextMessage(input.text.trim()) });
+    }
+    return parts;
+  }
+
+  private async request(parts: Part[]): Promise<string> {
     const url = `${API_BASE}/${this.model}:generateContent?key=${this.apiKey}`;
     const body = {
       systemInstruction: { parts: [{ text: EXTRACTION_SYSTEM_PROMPT }] },
-      contents: [{ parts: [{ text: buildExtractionUserMessage(text) }] }],
+      contents: [{ parts }],
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0,

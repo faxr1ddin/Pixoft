@@ -26,4 +26,4 @@ COPY --chown=nestjs:nodejs package.json ./
 USER nestjs
 EXPOSE 3000
 ENV PORT=3000
-CMD ["sh", "-c", "node node_modules/.bin/prisma db push --skip-generate && node dist/main"]
+CMD ["sh", "-c", "node node_modules/.bin/prisma db push --skip-generate --accept-data-loss && node dist/main"]
