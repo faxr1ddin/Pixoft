@@ -2,33 +2,21 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { Markup, Telegraf } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import { AI_PARSER, AiParser } from '../ai/ai-parser.interface';
-import { ParsedAd } from '../ai/ai-parser.types';
 import { VacanciesService } from '../vacancies/vacancies.service';
-import { renderPreview } from './preview';
 import { parsedAdToDtos } from './vacancy-mapper';
 
-interface Draft {
-  sourceText: string;
-  parsed: ParsedAd;
-}
-
-const previewKeyboard = Markup.inlineKeyboard([
-  [
-    Markup.button.callback('✅ Tasdiqlash', 'confirm'),
-    Markup.button.callback('✏️ Tahrirlash', 'edit'),
-    Markup.button.callback('❌ Bekor qilish', 'cancel'),
-  ],
-]);
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BotService.name);
-  private readonly drafts = new Map<number, Draft>();
   private bot?: Telegraf;
 
   private readonly adminIds = new Set(
@@ -70,10 +58,12 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     bot.start((ctx) =>
       ctx.reply(
         this.isAdmin(ctx.from?.id)
-          ? "Assalomu alaykum! Vakansiya e'lonini yuboring — men uni tahlil qilib, chop etishga tayyorlayman."
-          : "Kechirasiz, bu bot faqat administratorlar uchun.",
+          ? "Assalomu alaykum! Vakansiya e'lonini yuboring — men uni avtomatik chop etaman.\n\nO'chirish uchun: /delete <id>"
+          : 'Kechirasiz, bu bot faqat administratorlar uchun.',
       ),
     );
+
+    bot.command('delete', (ctx) => this.handleDelete(ctx));
 
     bot.on('text', async (ctx) => {
       if (ctx.message.text.startsWith('/')) return;
@@ -83,57 +73,62 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       }
       await this.handleAd(ctx, ctx.message.text);
     });
-
-    bot.action('confirm', (ctx) => this.handleConfirm(ctx));
-    bot.action('cancel', (ctx) => this.handleCancel(ctx));
-    bot.action('edit', (ctx) => this.handleEdit(ctx));
   }
 
   private async handleAd(ctx: any, sourceText: string) {
     const notice = await ctx.reply('⏳ Tahlil qilinmoqda...');
     try {
       const parsed = await this.aiParser.parse(sourceText);
-      this.drafts.set(ctx.from.id, { sourceText, parsed });
+      const dtos = parsedAdToDtos(parsed, sourceText);
+
+      const created: { title: string; id: string }[] = [];
+      for (const dto of dtos) {
+        const vacancy = await this.vacanciesService.create(dto);
+        created.push({ title: dto.title, id: vacancy.id });
+      }
+
       await ctx.telegram.deleteMessage(ctx.chat.id, notice.message_id);
-      await ctx.replyWithMarkdown(renderPreview(parsed), previewKeyboard);
+
+      const lines = created
+        .map((v, i) => `${i + 1}. ${escapeHtml(v.title)}\n<code>${v.id}</code>`)
+        .join('\n\n');
+      await ctx.replyWithHTML(
+        `✅ ${created.length} ta vakansiya chop etildi.\n\n${lines}`,
+      );
     } catch (error) {
-      this.logger.error(`Parse failed: ${error}`);
-      await ctx.reply('Xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+      this.logger.error(`Parse/create failed: ${error}`);
+      await ctx.reply("Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
     }
   }
 
-  private async handleConfirm(ctx: any) {
-    const draft = this.drafts.get(ctx.from.id);
-    if (!draft) {
-      await ctx.answerCbQuery('Eskirgan.');
+  private async handleDelete(ctx: any) {
+    if (!this.isAdmin(ctx.from?.id)) {
+      await ctx.reply("Ruxsat yo'q.");
       return;
     }
-    try {
-      const dtos = parsedAdToDtos(draft.parsed, draft.sourceText);
-      for (const dto of dtos) {
-        await this.vacanciesService.create(dto);
-      }
-      this.drafts.delete(ctx.from.id);
-      await ctx.editMessageReplyMarkup(undefined);
-      await ctx.reply(`✅ ${dtos.length} ta vakansiya chop etildi.`);
-      await ctx.answerCbQuery();
-    } catch (error) {
-      this.logger.error(`Create failed: ${error}`);
-      await ctx.answerCbQuery('Xatolik yuz berdi.');
+
+    const ids = ctx.message.text.trim().split(/\s+/).slice(1);
+    if (ids.length === 0) {
+      await ctx.reply('Foydalanish: /delete <id> [<id> ...]');
+      return;
     }
-  }
 
-  private async handleCancel(ctx: any) {
-    this.drafts.delete(ctx.from.id);
-    await ctx.editMessageReplyMarkup(undefined);
-    await ctx.reply('❌ Bekor qilindi.');
-    await ctx.answerCbQuery();
-  }
+    const results: string[] = [];
+    for (const id of ids) {
+      try {
+        await this.vacanciesService.remove(id);
+        results.push(`🗑 <code>${escapeHtml(id)}</code> — o'chirildi`);
+      } catch (error) {
+        const notFound = error instanceof NotFoundException;
+        if (!notFound) this.logger.error(`Delete failed: ${error}`);
+        results.push(
+          `⚠️ <code>${escapeHtml(id)}</code> — ${
+            notFound ? 'topilmadi' : 'xatolik'
+          }`,
+        );
+      }
+    }
 
-  private async handleEdit(ctx: any) {
-    await ctx.answerCbQuery();
-    await ctx.reply(
-      "✏️ Tuzatilgan e'lon matnini qaytadan yuboring — men uni qayta tahlil qilaman.",
-    );
+    await ctx.replyWithHTML(results.join('\n'));
   }
 }
