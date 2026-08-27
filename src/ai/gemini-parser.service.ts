@@ -13,12 +13,17 @@ import {
 import { normalizeParsed } from './normalization';
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const MAX_RETRIES = 3;
 
 type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * Free-tier AI parser backed by Google Gemini (Google AI Studio).
- * Multimodal: accepts plain text or an image of the ad. No SDK, no cost.
+ * Multimodal (text or image), no SDK, no cost. Requests are serialized and
+ * retried with backoff so a burst of messages doesn't trip the free-tier
+ * rate limit.
  */
 @Injectable()
 export class GeminiParserService implements AiParser {
@@ -26,7 +31,17 @@ export class GeminiParserService implements AiParser {
   private readonly model = process.env.AI_MODEL ?? 'gemini-3.6-flash';
   private readonly apiKey = process.env.GEMINI_API_KEY ?? '';
 
-  async parse(input: AdInput): Promise<ParsedAd> {
+  /** Serializes calls so concurrent messages don't hit the rate limit at once. */
+  private queue: Promise<unknown> = Promise.resolve();
+
+  parse(input: AdInput): Promise<ParsedAd> {
+    const run = () => this.runParse(input);
+    const result = this.queue.then(run, run);
+    this.queue = result.catch(() => undefined);
+    return result;
+  }
+
+  private async runParse(input: AdInput): Promise<ParsedAd> {
     if (!this.apiKey) {
       throw new InternalServerErrorException('GEMINI_API_KEY is not set');
     }
@@ -67,28 +82,48 @@ export class GeminiParserService implements AiParser {
       },
     };
 
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch (error) {
-      this.logger.error(`Gemini request failed: ${error}`);
-      throw new InternalServerErrorException('AI parsing failed');
-    }
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      } catch (error) {
+        if (attempt < MAX_RETRIES) {
+          await sleep(this.backoff(attempt));
+          continue;
+        }
+        this.logger.error(`Gemini request failed: ${error}`);
+        throw new InternalServerErrorException('AI parsing failed');
+      }
 
-    if (!response.ok) {
+      if (response.ok) {
+        const data = (await response.json()) as {
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      }
+
+      const retryable = response.status === 429 || response.status >= 500;
+      if (retryable && attempt < MAX_RETRIES) {
+        const retryAfter = Number(response.headers.get('retry-after')) * 1000;
+        await sleep(retryAfter > 0 ? retryAfter : this.backoff(attempt));
+        continue;
+      }
+
       const detail = await response.text().catch(() => '');
       this.logger.error(`Gemini HTTP ${response.status}: ${detail.slice(0, 300)}`);
       throw new InternalServerErrorException('AI parsing failed');
     }
 
-    const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    throw new InternalServerErrorException('AI parsing failed');
+  }
+
+  /** Exponential backoff with jitter: ~1s, 2s, 4s. */
+  private backoff(attempt: number): number {
+    return 2 ** attempt * 1000 + Math.floor(Math.random() * 500);
   }
 
   private extractJson(raw: string): Record<string, unknown> {
