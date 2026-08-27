@@ -20,7 +20,7 @@ const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 @Injectable()
 export class GeminiParserService implements AiParser {
   private readonly logger = new Logger(GeminiParserService.name);
-  private readonly model = process.env.AI_MODEL ?? 'gemini-2.0-flash';
+  private readonly model = process.env.AI_MODEL ?? 'gemini-3.6-flash';
   private readonly apiKey = process.env.GEMINI_API_KEY ?? '';
 
   async parse(sourceText: string): Promise<ParsedVacancy> {
