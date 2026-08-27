@@ -17,6 +17,40 @@ const MAX_RETRIES = 3;
 
 type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
 
+const S = { type: 'STRING' };
+const NULLABLE_S = { type: 'STRING', nullable: true };
+const STRING_LIST = { type: 'ARRAY', items: S };
+
+/**
+ * Gemini response schema — forces valid, typed JSON. Declaring salaries as
+ * INTEGER stops the model from emitting dotted literals like 3.000.000
+ * (invalid JSON). Enum validation stays in normalization for provider parity.
+ */
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    positions: STRING_LIST,
+    company: NULLABLE_S,
+    workType: NULLABLE_S,
+    locations: STRING_LIST,
+    gender: NULLABLE_S,
+    salaryMin: { type: 'INTEGER', nullable: true },
+    salaryMax: { type: 'INTEGER', nullable: true },
+    currency: NULLABLE_S,
+    category: S,
+    ageRange: NULLABLE_S,
+    workSchedule: NULLABLE_S,
+    address: NULLABLE_S,
+    description: NULLABLE_S,
+    benefits: STRING_LIST,
+    requirements: STRING_LIST,
+    phones: STRING_LIST,
+    contactTelegram: NULLABLE_S,
+    applyLink: NULLABLE_S,
+  },
+  required: ['positions', 'locations', 'category', 'benefits', 'requirements', 'phones'],
+};
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -77,8 +111,9 @@ export class GeminiParserService implements AiParser {
       contents: [{ parts }],
       generationConfig: {
         responseMimeType: 'application/json',
+        responseSchema: RESPONSE_SCHEMA,
         temperature: 0,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
       },
     };
 
