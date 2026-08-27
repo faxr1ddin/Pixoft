@@ -39,6 +39,7 @@ export interface ParsedAd {
   ageRange: string | null;
   workSchedule: string | null;
   address: string | null;
+  description: string | null;
   benefits: string[];
   requirements: string[];
   phones: string[];

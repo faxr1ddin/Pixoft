@@ -24,6 +24,7 @@ export const VACANCY_DETAIL_SELECT = {
   ageRange: true,
   workSchedule: true,
   address: true,
+  description: true,
   requirements: true,
   benefits: true,
   phones: true,

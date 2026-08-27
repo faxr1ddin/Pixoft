@@ -81,6 +81,11 @@ export class CreateVacancyDto {
   @IsString()
   address?: string;
 
+  @ApiPropertyOptional({ description: 'Job duties and any details not in structured fields' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
   @ApiProperty({ type: [String], example: ['Ovqatlanish', 'Transport'] })
   @IsArray()
   @IsString({ each: true })

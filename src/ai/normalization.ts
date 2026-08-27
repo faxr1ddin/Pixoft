@@ -78,6 +78,7 @@ export const normalizeParsed = (raw: Record<string, unknown>): ParsedAd => {
     ageRange: asString(raw.ageRange),
     workSchedule: asString(raw.workSchedule),
     address: asString(raw.address),
+    description: asString(raw.description),
     benefits: asStringArray(raw.benefits),
     requirements: asStringArray(raw.requirements),
     phones,

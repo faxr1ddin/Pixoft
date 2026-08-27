@@ -25,6 +25,7 @@ export const parsedAdToDto = (
   ageRange: orNull(ad.ageRange),
   workSchedule: orNull(ad.workSchedule),
   address: orNull(ad.address),
+  description: orNull(ad.description),
   benefits: ad.benefits,
   requirements: ad.requirements,
   phones: ad.phones,
