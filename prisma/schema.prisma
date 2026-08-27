@@ -16,7 +16,7 @@ model Vacancy {
   workType        String
   location        String
   gender          String?
-  salaryMin       Int
+  salaryMin       Int?
   salaryMax       Int?
   category        String
   ageRange        String?

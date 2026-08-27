@@ -7,14 +7,14 @@ import {
 } from '@nestjs/common';
 import { Markup, Telegraf } from 'telegraf';
 import { AI_PARSER, AiParser } from '../ai/ai-parser.interface';
-import { ParsedVacancy } from '../ai/ai-parser.types';
+import { ParsedAd } from '../ai/ai-parser.types';
 import { VacanciesService } from '../vacancies/vacancies.service';
 import { renderPreview } from './preview';
-import { parsedToCreateDto } from './vacancy-mapper';
+import { parsedAdToDtos } from './vacancy-mapper';
 
 interface Draft {
   sourceText: string;
-  parsed: ParsedVacancy;
+  parsed: ParsedAd;
 }
 
 const previewKeyboard = Markup.inlineKeyboard([
@@ -109,11 +109,13 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     try {
-      const dto = parsedToCreateDto(draft.parsed, draft.sourceText);
-      const vacancy = await this.vacanciesService.create(dto);
+      const dtos = parsedAdToDtos(draft.parsed, draft.sourceText);
+      for (const dto of dtos) {
+        await this.vacanciesService.create(dto);
+      }
       this.drafts.delete(ctx.from.id);
       await ctx.editMessageReplyMarkup(undefined);
-      await ctx.reply(`✅ Vakansiya chop etildi (ID: ${vacancy.id}).`);
+      await ctx.reply(`✅ ${dtos.length} ta vakansiya chop etildi.`);
       await ctx.answerCbQuery();
     } catch (error) {
       this.logger.error(`Create failed: ${error}`);

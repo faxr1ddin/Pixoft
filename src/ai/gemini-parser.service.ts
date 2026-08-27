@@ -4,7 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { AiParser } from './ai-parser.interface';
-import { ParsedVacancy } from './ai-parser.types';
+import { ParsedAd } from './ai-parser.types';
 import {
   buildExtractionUserMessage,
   EXTRACTION_SYSTEM_PROMPT,
@@ -23,7 +23,7 @@ export class GeminiParserService implements AiParser {
   private readonly model = process.env.AI_MODEL ?? 'gemini-3.6-flash';
   private readonly apiKey = process.env.GEMINI_API_KEY ?? '';
 
-  async parse(sourceText: string): Promise<ParsedVacancy> {
+  async parse(sourceText: string): Promise<ParsedAd> {
     const text = sourceText?.trim();
     if (!text) {
       throw new InternalServerErrorException('Empty advertisement text');

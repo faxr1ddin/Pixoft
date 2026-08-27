@@ -1,12 +1,12 @@
-import { ParsedVacancy } from './ai-parser.types';
+import { ParsedAd } from './ai-parser.types';
 
 /**
  * Port for the AI extraction engine. The application depends on this
- * interface, not on any specific provider (Claude, Gemini, Ollama…),
+ * interface, not on any specific provider (Gemini, Claude, Ollama…),
  * so implementations can be swapped without touching business logic.
  */
 export interface AiParser {
-  parse(sourceText: string): Promise<ParsedVacancy>;
+  parse(sourceText: string): Promise<ParsedAd>;
 }
 
 /** DI token for the active AiParser implementation. */

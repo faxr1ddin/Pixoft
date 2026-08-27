@@ -13,16 +13,21 @@ export type WorkType = (typeof WORK_TYPES)[number];
 export type Gender = (typeof GENDERS)[number];
 export type Category = (typeof CATEGORIES)[number];
 
+/** Max positions/vacancies we create from a single advertisement. */
+export const MAX_POSITIONS = 20;
+
 /**
- * The structured result of parsing a raw job advertisement.
- * Every field the ad does not clearly state is null (or [] for lists) —
- * the parser never guesses. `category` is the one allowed classification.
+ * The structured result of parsing one raw advertisement. A single post can
+ * advertise several positions that share the same company, salary, locations
+ * and contacts — so `positions` is a list and each becomes its own vacancy.
+ * Every field the ad does not clearly state is null (or [] for lists) — the
+ * parser never guesses. `category` is the one allowed classification.
  */
-export interface ParsedVacancy {
-  title: string | null;
+export interface ParsedAd {
+  positions: string[];
   company: string | null;
   workType: WorkType | null;
-  location: string | null;
+  locations: string[];
   gender: Gender | null;
   salaryMin: number | null;
   salaryMax: number | null;
@@ -32,7 +37,7 @@ export interface ParsedVacancy {
   address: string | null;
   benefits: string[];
   requirements: string[];
-  contactPhone: string | null;
+  phones: string[];
   contactTelegram: string | null;
   applyLink: string | null;
 }

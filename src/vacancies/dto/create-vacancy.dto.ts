@@ -28,10 +28,11 @@ export class CreateVacancyDto {
   @IsIn(['Erkak', 'Ayol'])
   gender?: string;
 
-  @ApiProperty({ example: 3000000 })
+  @ApiPropertyOptional({ example: 3000000, description: 'null = negotiable' })
+  @IsOptional()
   @IsInt()
   @Min(0)
-  salaryMin: number;
+  salaryMin?: number;
 
   @ApiPropertyOptional({ example: 7000000 })
   @IsOptional()
