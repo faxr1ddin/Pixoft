@@ -82,4 +82,9 @@ export class CreateVacancyDto {
   @IsOptional()
   @IsString()
   applyLink?: string;
+
+  @ApiPropertyOptional({ description: 'Original advertisement text (for re-parsing)' })
+  @IsOptional()
+  @IsString()
+  sourceText?: string;
 }
