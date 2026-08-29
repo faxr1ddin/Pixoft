@@ -19,6 +19,7 @@ type Part = { text: string } | { inlineData: { mimeType: string; data: string } 
 
 const S = { type: 'STRING' };
 const NULLABLE_S = { type: 'STRING', nullable: true };
+const NULLABLE_INT = { type: 'INTEGER', nullable: true };
 const STRING_LIST = { type: 'ARRAY', items: S };
 
 /**
@@ -26,29 +27,37 @@ const STRING_LIST = { type: 'ARRAY', items: S };
  * INTEGER stops the model from emitting dotted literals like 3.000.000
  * (invalid JSON). Enum validation stays in normalization for provider parity.
  */
+const ROLE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    title: S,
+    gender: NULLABLE_S,
+    ageRange: NULLABLE_S,
+    salaryMin: NULLABLE_INT,
+    salaryMax: NULLABLE_INT,
+    currency: NULLABLE_S,
+    requirements: STRING_LIST,
+  },
+  required: ['title', 'requirements'],
+};
+
 const RESPONSE_SCHEMA = {
   type: 'OBJECT',
   properties: {
-    positions: STRING_LIST,
+    roles: { type: 'ARRAY', items: ROLE_SCHEMA },
     company: NULLABLE_S,
+    category: S,
     workType: NULLABLE_S,
     locations: STRING_LIST,
-    gender: NULLABLE_S,
-    salaryMin: { type: 'INTEGER', nullable: true },
-    salaryMax: { type: 'INTEGER', nullable: true },
-    currency: NULLABLE_S,
-    category: S,
-    ageRange: NULLABLE_S,
     workSchedule: NULLABLE_S,
     address: NULLABLE_S,
     description: NULLABLE_S,
     benefits: STRING_LIST,
-    requirements: STRING_LIST,
     phones: STRING_LIST,
     contactTelegram: NULLABLE_S,
     applyLink: NULLABLE_S,
   },
-  required: ['positions', 'locations', 'category', 'benefits', 'requirements', 'phones'],
+  required: ['roles', 'category', 'locations', 'benefits', 'phones'],
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

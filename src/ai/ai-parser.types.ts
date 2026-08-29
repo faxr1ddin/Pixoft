@@ -20,28 +20,36 @@ export type Currency = (typeof CURRENCIES)[number];
 export const MAX_LIST_ITEMS = 30;
 
 /**
- * The structured result of parsing one raw advertisement into a single
- * vacancy. A post may name several roles, cities and phones, so those are
- * lists on the one vacancy — the ad is never split. Every field the ad does
- * not clearly state is null (or [] for lists); the parser never guesses.
- * `category` is the one allowed classification.
+ * One role within a vacancy. A post may advertise several roles that differ
+ * in gender, age, salary or requirements (e.g. gendered sections), so these
+ * attributes live on the role, not the vacancy. Fields the ad does not state
+ * are null (or [] for lists); the parser never guesses.
  */
-export interface ParsedAd {
-  positions: string[];
-  company: string | null;
-  workType: WorkType | null;
-  locations: string[];
+export interface ParsedRole {
+  title: string;
   gender: Gender | null;
+  ageRange: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   currency: Currency | null;
+  requirements: string[];
+}
+
+/**
+ * The structured result of parsing one advertisement into a single vacancy.
+ * `roles` holds one or more positions; everything else is shared across them
+ * (company, locations, schedule, benefits, contacts). The ad is never split.
+ */
+export interface ParsedAd {
+  roles: ParsedRole[];
+  company: string | null;
   category: Category;
-  ageRange: string | null;
+  workType: WorkType | null;
+  locations: string[];
   workSchedule: string | null;
   address: string | null;
   description: string | null;
   benefits: string[];
-  requirements: string[];
   phones: string[];
   contactTelegram: string | null;
   applyLink: string | null;

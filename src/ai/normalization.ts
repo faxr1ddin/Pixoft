@@ -7,6 +7,7 @@ import {
   Gender,
   MAX_LIST_ITEMS,
   ParsedAd,
+  ParsedRole,
   WORK_TYPES,
   WorkType,
 } from './ai-parser.types';
@@ -46,41 +47,48 @@ export const normalizePhone = (value: string): string => {
   return value.trim();
 };
 
-/**
- * Coerce a raw AI JSON object into a valid ParsedAd: drop unknown enum
- * values, clamp salaries so min <= max, dedupe phones, and guarantee list
- * fields are clean, bounded arrays.
- */
-export const normalizeParsed = (raw: Record<string, unknown>): ParsedAd => {
+const normalizeRole = (raw: Record<string, unknown>): ParsedRole => {
   let salaryMin = asAmount(raw.salaryMin);
   let salaryMax = asAmount(raw.salaryMax);
   if (salaryMin !== null && salaryMax !== null && salaryMin > salaryMax) {
     [salaryMin, salaryMax] = [salaryMax, salaryMin];
   }
-
   const hasSalary = salaryMin !== null || salaryMax !== null;
-  const currency = hasSalary
-    ? oneOf<Currency>(raw.currency, CURRENCIES) ?? 'UZS'
-    : null;
+
+  return {
+    title: asString(raw.title) ?? 'Nomsiz lavozim',
+    gender: oneOf<Gender>(raw.gender, GENDERS),
+    ageRange: asString(raw.ageRange),
+    salaryMin,
+    salaryMax,
+    currency: hasSalary ? oneOf<Currency>(raw.currency, CURRENCIES) ?? 'UZS' : null,
+    requirements: asStringArray(raw.requirements),
+  };
+};
+
+/**
+ * Coerce a raw AI JSON object into a valid ParsedAd: normalize each role,
+ * drop unknown enum values, dedupe phones, and bound every list.
+ */
+export const normalizeParsed = (raw: Record<string, unknown>): ParsedAd => {
+  const rawRoles = Array.isArray(raw.roles) ? raw.roles : [];
+  const roles = rawRoles
+    .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
+    .slice(0, MAX_LIST_ITEMS)
+    .map(normalizeRole);
 
   const phones = [...new Set(asStringArray(raw.phones).map(normalizePhone))];
 
   return {
-    positions: asStringArray(raw.positions),
+    roles,
     company: asString(raw.company),
+    category: oneOf<Category>(raw.category, CATEGORIES) ?? 'Boshqa',
     workType: oneOf<WorkType>(raw.workType, WORK_TYPES),
     locations: asStringArray(raw.locations),
-    gender: oneOf<Gender>(raw.gender, GENDERS),
-    salaryMin,
-    salaryMax,
-    currency,
-    category: oneOf<Category>(raw.category, CATEGORIES) ?? 'Boshqa',
-    ageRange: asString(raw.ageRange),
     workSchedule: asString(raw.workSchedule),
     address: asString(raw.address),
     description: asString(raw.description),
     benefits: asStringArray(raw.benefits),
-    requirements: asStringArray(raw.requirements),
     phones,
     contactTelegram: asString(raw.contactTelegram),
     applyLink: asString(raw.applyLink),

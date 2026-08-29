@@ -12,8 +12,9 @@ export class VacanciesService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateVacancyDto) {
+    const { roles, ...rest } = dto;
     return this.prisma.vacancy.create({
-      data: dto,
+      data: { ...rest, roles: { create: roles } },
       select: VACANCY_DETAIL_SELECT,
     });
   }
@@ -42,9 +43,13 @@ export class VacanciesService {
   async update(id: string, dto: UpdateVacancyDto) {
     await this.findOne(id);
 
+    const { roles, ...rest } = dto;
     return this.prisma.vacancy.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(roles && { roles: { deleteMany: {}, create: roles } }),
+      },
       select: VACANCY_DETAIL_SELECT,
     });
   }

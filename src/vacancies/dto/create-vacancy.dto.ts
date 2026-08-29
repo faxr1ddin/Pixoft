@@ -1,22 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsIn,
-  IsInt,
   IsOptional,
   IsString,
-  Min,
+  ValidateNested,
 } from 'class-validator';
+import { RoleDto } from './role.dto';
 
 export class CreateVacancyDto {
   @ApiProperty({ example: 'Frontend Developer' })
   @IsString()
   title: string;
 
-  @ApiProperty({ type: [String], example: ['Frontend Developer', 'UI Designer'] })
+  @ApiProperty({ type: [RoleDto] })
   @IsArray()
-  @IsString({ each: true })
-  positions: string[];
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => RoleDto)
+  roles: RoleDto[];
 
   @ApiPropertyOptional({ example: 'TechUz' })
   @IsOptional()
@@ -27,6 +31,10 @@ export class CreateVacancyDto {
   @IsOptional()
   @IsString()
   companyLogo?: string;
+
+  @ApiProperty({ enum: ['IT', 'Savdo', 'Xizmat', 'Boshqa'] })
+  @IsIn(['IT', 'Savdo', 'Xizmat', 'Boshqa'])
+  category: string;
 
   @ApiPropertyOptional({
     enum: ["To'liq stavka", 'Yarim stavka', 'Masofaviy', 'Vaqtinchalik'],
@@ -39,37 +47,6 @@ export class CreateVacancyDto {
   @IsArray()
   @IsString({ each: true })
   locations: string[];
-
-  @ApiPropertyOptional({ enum: ['Erkak', 'Ayol'] })
-  @IsOptional()
-  @IsIn(['Erkak', 'Ayol'])
-  gender?: string;
-
-  @ApiPropertyOptional({ example: 3000000 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  salaryMin?: number;
-
-  @ApiPropertyOptional({ example: 7000000 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  salaryMax?: number;
-
-  @ApiPropertyOptional({ enum: ['UZS', 'USD'] })
-  @IsOptional()
-  @IsIn(['UZS', 'USD'])
-  currency?: string;
-
-  @ApiProperty({ enum: ['IT', 'Savdo', 'Xizmat', 'Boshqa'] })
-  @IsIn(['IT', 'Savdo', 'Xizmat', 'Boshqa'])
-  category: string;
-
-  @ApiPropertyOptional({ example: '18-35' })
-  @IsOptional()
-  @IsString()
-  ageRange?: string;
 
   @ApiPropertyOptional({ example: 'Dushanba-Juma, 09:00-18:00' })
   @IsOptional()
@@ -90,11 +67,6 @@ export class CreateVacancyDto {
   @IsArray()
   @IsString({ each: true })
   benefits: string[];
-
-  @ApiProperty({ type: [String], example: ['React bilimi', '2 yil tajriba'] })
-  @IsArray()
-  @IsString({ each: true })
-  requirements: string[];
 
   @ApiProperty({ type: [String], example: ['+998901234567'] })
   @IsArray()

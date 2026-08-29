@@ -12,28 +12,37 @@ model Vacancy {
   id              String   @id @default(cuid())
   code            Int      @unique @default(autoincrement())
   title           String
-  positions       String[]
   company         String?
   companyLogo     String?
+  category        String
   workType        String?
   locations       String[]
-  gender          String?
-  salaryMin       Int?
-  salaryMax       Int?
-  currency        String?
-  category        String
-  ageRange        String?
   workSchedule    String?
   address         String?
   description     String?
   benefits        String[]
-  requirements    String[]
   phones          String[]
   contactTelegram String?
   applyLink       String?
   sourceText      String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
+  roles           Role[]
 
   @@index([isActive, createdAt(sort: Desc)])
+}
+
+model Role {
+  id           String   @id @default(cuid())
+  vacancyId    String
+  vacancy      Vacancy  @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  title        String
+  gender       String?
+  ageRange     String?
+  salaryMin    Int?
+  salaryMax    Int?
+  currency     String?
+  requirements String[]
+
+  @@index([vacancyId])
 }

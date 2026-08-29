@@ -5,29 +5,43 @@ export const VACANCY_LIST_SELECT = {
   id: true,
   code: true,
   title: true,
-  positions: true,
   company: true,
   companyLogo: true,
   category: true,
   workType: true,
   locations: true,
-  gender: true,
-  salaryMin: true,
-  salaryMax: true,
-  currency: true,
   createdAt: true,
+  roles: {
+    select: {
+      title: true,
+      gender: true,
+      salaryMin: true,
+      salaryMax: true,
+      currency: true,
+    },
+  },
 } satisfies Prisma.VacancySelect;
 
 /** Fields returned by the detail endpoint (GET /vacancies/:id). */
 export const VACANCY_DETAIL_SELECT = {
   ...VACANCY_LIST_SELECT,
-  ageRange: true,
   workSchedule: true,
   address: true,
   description: true,
-  requirements: true,
   benefits: true,
   phones: true,
   contactTelegram: true,
   applyLink: true,
+  roles: {
+    select: {
+      id: true,
+      title: true,
+      gender: true,
+      ageRange: true,
+      salaryMin: true,
+      salaryMax: true,
+      currency: true,
+      requirements: true,
+    },
+  },
 } satisfies Prisma.VacancySelect;
