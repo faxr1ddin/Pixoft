@@ -12,6 +12,12 @@ import { AdInput } from '../ai/ai-parser.types';
 import { VacanciesService } from '../vacancies/vacancies.service';
 import { parsedAdToDto } from './vacancy-mapper';
 
+const HELP =
+  "Vakansiya e'lonini matn yoki rasm ko'rinishida yuboring — men uni avtomatik chop etaman.\n\n" +
+  "📋 /list — so'nggi vakansiyalar\n" +
+  '🗑 /delete — vakansiyani ID bo\'yicha o\'chirish\n' +
+  '❌ /cancel — amaldagi jarayonni bekor qilish';
+
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BotService.name);
@@ -41,6 +47,14 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
     this.bot = new Telegraf(token);
     this.registerHandlers(this.bot);
+    void this.bot.telegram
+      .setMyCommands([
+        { command: 'list', description: "So'nggi vakansiyalar" },
+        { command: 'delete', description: "Vakansiyani o'chirish" },
+        { command: 'cancel', description: 'Bekor qilish' },
+        { command: 'help', description: 'Yordam' },
+      ])
+      .catch((error) => this.logger.warn(`setMyCommands failed: ${error}`));
     void this.bot
       .launch()
       .catch((error) => this.logger.error(`Bot launch failed: ${error}`));
@@ -59,78 +73,129 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     bot.start((ctx) =>
       ctx.reply(
         this.isAdmin(ctx.from?.id)
-          ? "Assalomu alaykum! Vakansiya e'lonini matn yoki rasm ko'rinishida yuboring — men uni avtomatik chop etaman.\n\nO'chirish uchun: /delete"
+          ? `Assalomu alaykum!\n\n${HELP}`
           : 'Kechirasiz, bu bot faqat administratorlar uchun.',
       ),
     );
 
-    bot.command('delete', async (ctx) => {
-      if (!(await this.guardAdmin(ctx))) return;
-      this.awaitingDelete.add(ctx.from.id);
-      await ctx.reply("O'chirmoqchi bo'lgan vakansiya ID raqamini yuboring:");
-    });
+    bot.help((ctx) => this.guarded(ctx, () => ctx.reply(HELP)));
+    bot.command('list', (ctx) => this.guarded(ctx, () => this.handleList(ctx)));
+    bot.command('delete', (ctx) =>
+      this.guarded(ctx, () => this.handleDeletePrompt(ctx)),
+    );
+    bot.command('cancel', (ctx) =>
+      this.guarded(ctx, () => this.handleCancel(ctx)),
+    );
 
-    bot.on('text', async (ctx) => {
-      if (ctx.message.text.startsWith('/')) return;
-      if (!(await this.guardAdmin(ctx))) return;
+    bot.on('text', (ctx) =>
+      this.guarded(ctx, async () => {
+        if (ctx.message.text.startsWith('/')) return;
+        if (this.awaitingDelete.has(ctx.from.id)) {
+          this.awaitingDelete.delete(ctx.from.id);
+          await this.deleteByCode(ctx, ctx.message.text.trim());
+          return;
+        }
+        await this.createAndReply(ctx, { text: ctx.message.text });
+      }),
+    );
 
-      if (this.awaitingDelete.has(ctx.from.id)) {
-        this.awaitingDelete.delete(ctx.from.id);
-        await this.deleteByCode(ctx, ctx.message.text.trim());
-        return;
-      }
+    bot.on('photo', (ctx) =>
+      this.guarded(ctx, async () => {
+        const photos = ctx.message.photo;
+        const image = await this.downloadFile(
+          ctx,
+          photos[photos.length - 1].file_id,
+          'image/jpeg',
+        );
+        await this.handleMedia(ctx, image, ctx.message.caption);
+      }),
+    );
 
-      await this.createAndReply(ctx, { text: ctx.message.text });
-    });
-
-    bot.on('photo', async (ctx) => {
-      if (!(await this.guardAdmin(ctx))) return;
-      const image = await this.downloadPhoto(ctx);
-      if (!image) {
-        await ctx.reply("Rasmni o'qib bo'lmadi. Iltimos, qaytadan yuboring.");
-        return;
-      }
-      await this.createAndReply(ctx, { image, text: ctx.message.caption });
-    });
+    bot.on('document', (ctx) =>
+      this.guarded(ctx, async () => {
+        const doc = ctx.message.document;
+        if (!doc.mime_type?.startsWith('image/')) {
+          await ctx.reply('Faqat matn yoki rasm qabul qilinadi.');
+          return;
+        }
+        const image = await this.downloadFile(ctx, doc.file_id, doc.mime_type);
+        await this.handleMedia(ctx, image, ctx.message.caption);
+      }),
+    );
   }
 
-  private async guardAdmin(ctx: any): Promise<boolean> {
-    if (this.isAdmin(ctx.from?.id)) return true;
-    await ctx.reply("Ruxsat yo'q.");
-    return false;
+  /** Admin gate + top-level error boundary shared by every handler. */
+  private async guarded(ctx: any, handler: () => unknown) {
+    if (!this.isAdmin(ctx.from?.id)) {
+      await ctx.reply("Ruxsat yo'q.");
+      return;
+    }
+    try {
+      await handler();
+    } catch (error) {
+      this.logger.error(`Handler error: ${error}`);
+      await ctx.reply("Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
+    }
   }
 
-  private async downloadPhoto(
+  private async handleMedia(
     ctx: any,
+    image: { base64: string; mimeType: string } | null,
+    caption?: string,
+  ) {
+    if (!image) {
+      await ctx.reply("Rasmni o'qib bo'lmadi. Iltimos, qaytadan yuboring.");
+      return;
+    }
+    await this.createAndReply(ctx, { image, text: caption });
+  }
+
+  private async downloadFile(
+    ctx: any,
+    fileId: string,
+    mimeType: string,
   ): Promise<{ base64: string; mimeType: string } | null> {
     try {
-      const photos = ctx.message.photo;
-      const fileId = photos[photos.length - 1].file_id;
       const link = await ctx.telegram.getFileLink(fileId);
       const res = await fetch(link.toString());
       const buffer = Buffer.from(await res.arrayBuffer());
-      return { base64: buffer.toString('base64'), mimeType: 'image/jpeg' };
+      return { base64: buffer.toString('base64'), mimeType };
     } catch (error) {
-      this.logger.error(`Photo download failed: ${error}`);
+      this.logger.error(`File download failed: ${error}`);
       return null;
     }
   }
 
   private async createAndReply(ctx: any, input: AdInput) {
     const notice = await ctx.reply('⏳ Tahlil qilinmoqda...');
-    try {
-      const parsed = await this.aiParser.parse(input);
-      const dto = parsedAdToDto(parsed, input.text ?? '');
-      const vacancy = await this.vacanciesService.create(dto);
+    const parsed = await this.aiParser.parse(input);
+    const dto = parsedAdToDto(parsed, input.text ?? '');
+    const vacancy = await this.vacanciesService.create(dto);
 
-      await ctx.telegram.deleteMessage(ctx.chat.id, notice.message_id);
-      await ctx.replyWithHTML(
-        `✅ Vakansiya chop etildi.\nID: <b>${vacancy.code}</b>`,
-      );
-    } catch (error) {
-      this.logger.error(`Parse/create failed: ${error}`);
-      await ctx.reply("Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
+    await ctx.telegram.deleteMessage(ctx.chat.id, notice.message_id);
+    await ctx.replyWithHTML(
+      `✅ Vakansiya chop etildi.\nID: <b>${vacancy.code}</b>`,
+    );
+  }
+
+  private async handleList(ctx: any) {
+    const vacancies = await this.vacanciesService.listRecent();
+    if (vacancies.length === 0) {
+      await ctx.reply("Hozircha vakansiya yo'q.");
+      return;
     }
+    const lines = vacancies.map((v) => `${v.code} — ${v.title}`).join('\n');
+    await ctx.reply(`📋 So'nggi vakansiyalar:\n\n${lines}`);
+  }
+
+  private async handleDeletePrompt(ctx: any) {
+    this.awaitingDelete.add(ctx.from.id);
+    await ctx.reply("O'chirmoqchi bo'lgan vakansiya ID raqamini yuboring:");
+  }
+
+  private async handleCancel(ctx: any) {
+    const had = this.awaitingDelete.delete(ctx.from.id);
+    await ctx.reply(had ? 'Bekor qilindi.' : "Faol amal yo'q.");
   }
 
   private async deleteByCode(ctx: any, input: string) {
@@ -147,8 +212,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       if (error instanceof NotFoundException) {
         await ctx.reply(`${code}-ID bo'yicha vakansiya topilmadi.`);
       } else {
-        this.logger.error(`Delete failed: ${error}`);
-        await ctx.reply('Xatolik yuz berdi.');
+        throw error;
       }
     }
   }

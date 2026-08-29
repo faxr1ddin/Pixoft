@@ -27,6 +27,16 @@ export class VacanciesService {
     });
   }
 
+  /** Compact recent list (code + title) for the bot's /list command. */
+  listRecent(limit = 20) {
+    return this.prisma.vacancy.findMany({
+      where: { isActive: true },
+      select: { code: true, title: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
   async findOne(id: string) {
     const vacancy = await this.prisma.vacancy.findFirst({
       where: { id, isActive: true },
